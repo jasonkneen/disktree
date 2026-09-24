@@ -1287,6 +1287,23 @@ impl Disktree {
         cx.notify();
     }
 
+    /// Show the selected tile, or the directory on screen, in the file
+    /// manager.
+    pub fn reveal_selected(&mut self, cx: &mut Context<'_, Self>) {
+        let crumbs =
+            self.selected.clone().unwrap_or_else(|| self.crumbs.clone());
+        let Some(path) = self.path_at(&crumbs) else {
+            return;
+        };
+        if let Err(error) = crate::reveal::reveal(&path) {
+            self.notice = Some((
+                format!("could not open the file manager: {error}"),
+                Status::Error,
+            ));
+            cx.notify();
+        }
+    }
+
     pub fn target_at(&self, crumbs: &[usize]) -> Option<Target> {
         let node = self.node_at(crumbs)?;
         let path = self.path_at(crumbs)?;
@@ -2108,6 +2125,7 @@ impl Disktree {
                 self.options.apparent_size = !self.options.apparent_size;
                 self.start_scan(cx);
             }
+            "o" if !control => self.reveal_selected(cx),
             "p" if !control => {
                 self.show_selection = !self.show_selection;
                 cx.notify();
